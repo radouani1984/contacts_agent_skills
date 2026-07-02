@@ -1,0 +1,42 @@
+version: "1.0"
+skill_id: filter_brands
+skill_type: dimension_listing
+name: Filter Brands
+description: >
+  Lists canonical brand values available in the budget dataset with normalized variants
+  and aggregate volume hints. Use it when the agent needs available brand options.
+endpoint:
+  id: filter_brands
+  method: GET
+use_when:
+  - The user asks for available brands.
+  - The planner needs a list source for a picker or disambiguation UI.
+  - The agent needs canonical values without fuzzy search.
+avoid_when:
+  - The user provides a fuzzy brand that needs matching.
+parameters:
+  required: []
+  optional:
+    - limit
+  defaults:
+    limit: 100
+response_contract:
+  kind: dimension_values_list
+  row_fields:
+    - rank
+    - value
+    - label
+    - normalized_value
+    - normalized_compact
+    - row_count
+planner_hints:
+  intent: list_brands
+  retrieval_keywords:
+    - available brands
+    - list brands
+    - filter brands
+    - marque disponibles
+    - valeurs marque
+guardrails:
+  - Prefer resolve_brand when the input is user-provided free text.
+  - Use this skill for option listing, not ranking or financial analysis.

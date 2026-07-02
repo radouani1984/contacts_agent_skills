@@ -1,0 +1,72 @@
+# apis/filter_statuses.yaml
+
+type: api
+
+sql: |
+  WITH values AS (
+    SELECT
+      status AS value,
+
+      TRIM(
+        REGEXP_REPLACE(
+          STRIP_ACCENTS(LOWER(CAST(status AS VARCHAR))),
+          '[^a-z0-9]+',
+          ' ',
+          'g'
+        )
+      ) AS normalized_value,
+
+      REGEXP_REPLACE(
+        STRIP_ACCENTS(LOWER(CAST(status AS VARCHAR))),
+        '[^a-z0-9]+',
+        '',
+        'g'
+      ) AS normalized_compact,
+
+      COUNT(*) AS row_count,
+
+      SUM(COALESCE(committed_eur, 0)) AS total_committed_eur,
+      SUM(COALESCE(gross_investment_eur, 0)) AS total_gross_investment_eur,
+      SUM(COALESCE(media_net_eur, 0)) AS total_media_net_eur,
+      SUM(COALESCE(media_agency_fees_eur, 0)) AS total_media_agency_fees_eur,
+      SUM(COALESCE(technical_costs_eur, 0)) AS total_technical_costs_eur,
+      SUM(COALESCE(media_taxes_eur, 0)) AS total_media_taxes_eur,
+      SUM(COALESCE(non_media_costs_eur, 0)) AS total_non_media_costs_eur
+
+    FROM bigquery_budget_model_2025
+    WHERE status IS NOT NULL
+      AND TRIM(CAST(status AS VARCHAR)) <> ''
+    GROUP BY status
+  ),
+
+  ranked AS (
+    SELECT
+      ROW_NUMBER() OVER (
+        ORDER BY
+          row_count DESC,
+          value ASC
+      ) AS rank,
+
+      value,
+      value AS label,
+      normalized_value,
+      normalized_compact,
+      row_count,
+
+      total_committed_eur,
+      total_gross_investment_eur,
+      total_media_net_eur,
+      total_media_agency_fees_eur,
+      total_technical_costs_eur,
+      total_media_taxes_eur,
+      total_non_media_costs_eur
+    FROM values
+  )
+
+  SELECT
+    *
+  FROM ranked
+  ORDER BY
+    row_count DESC,
+    value ASC
+  LIMIT {{ default 100 .args.limit }}

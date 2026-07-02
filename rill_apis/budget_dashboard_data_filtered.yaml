@@ -1,0 +1,112 @@
+# apis/budget_dashboard_data_filtered.yaml
+
+type: api
+
+sql: |
+  {{ $brand := .args.brand | default "" | replace "'" "''" }}
+  {{ $country := .args.country | default "" | replace "'" "''" }}
+  {{ $media := .args.media | default "" | replace "'" "''" }}
+  {{ $status := .args.status | default "" | replace "'" "''" }}
+  {{ $workflow_process := .args.workflow_process | default "" | replace "'" "''" }}
+
+  WITH base AS (
+    SELECT *
+    FROM bigquery_budget_model_2025
+    WHERE 1 = 1
+
+    {{ if $brand }}
+      AND LOWER(TRIM(CAST(brand AS VARCHAR))) = LOWER(TRIM('{{ $brand }}'))
+    {{ end }}
+
+    {{ if $country }}
+      AND LOWER(TRIM(CAST(country AS VARCHAR))) = LOWER(TRIM('{{ $country }}'))
+    {{ end }}
+
+    {{ if $media }}
+      AND LOWER(TRIM(CAST(media AS VARCHAR))) = LOWER(TRIM('{{ $media }}'))
+    {{ end }}
+
+    {{ if $status }}
+      AND LOWER(TRIM(CAST(status AS VARCHAR))) = LOWER(TRIM('{{ $status }}'))
+    {{ end }}
+
+    {{ if $workflow_process }}
+      AND LOWER(TRIM(CAST(workflow_process AS VARCHAR))) = LOWER(TRIM('{{ $workflow_process }}'))
+    {{ end }}
+  ),
+
+  totals AS (
+    SELECT
+      SUM(COALESCE(media_net_eur, 0)) AS total_media_net_eur,
+      SUM(COALESCE(committed_total_eur, 0)) AS total_committed_eur,
+      SUM(COALESCE(gross_investment_eur, 0)) AS total_gross_investment_eur,
+      SUM(COALESCE(purchase_order_amount, 0)) AS total_purchase_order_amount,
+      SUM(COALESCE(proposal_amount, 0)) AS total_proposal_amount,
+      SUM(COALESCE(purchase_order_amount, 0)) - SUM(COALESCE(proposal_amount, 0)) AS proposal_to_po_gap,
+
+      SUM(COALESCE(technical_costs_eur, 0)) AS total_technical_costs_eur,
+      SUM(COALESCE(non_media_costs_eur, 0)) AS total_non_media_costs_eur,
+      SUM(COALESCE(media_agency_fees_eur, 0)) AS total_media_agency_fees_eur,
+      SUM(COALESCE(media_taxes_eur, 0)) AS total_media_taxes_eur,
+      SUM(COALESCE(rate_card_eur, 0)) AS total_rate_card_eur,
+
+      SUM(COALESCE(technical_costs_eur, 0)) / NULLIF(SUM(COALESCE(media_net_eur, 0)), 0) AS technical_cost_rate_eur,
+      SUM(COALESCE(media_agency_fees_eur, 0)) / NULLIF(SUM(COALESCE(media_net_eur, 0)), 0) AS agency_fee_rate_eur,
+      SUM(COALESCE(media_taxes_eur, 0)) / NULLIF(SUM(COALESCE(media_net_eur, 0)), 0) AS tax_rate_eur,
+      SUM(COALESCE(media_net_eur, 0)) / NULLIF(SUM(COALESCE(rate_card_eur, 0)), 0) AS media_net_vs_rate_card_ratio
+    FROM base
+  )
+
+  SELECT
+    'main_kpis' AS widget_id,
+    'kpi_grid' AS widget_type,
+    'Total Media Net EUR' AS label,
+    total_media_net_eur AS value,
+    1 AS sort_order
+  FROM totals
+
+  UNION ALL
+  SELECT 'main_kpis', 'kpi_grid', 'Total Committed EUR', total_committed_eur, 2 FROM totals
+
+  UNION ALL
+  SELECT 'main_kpis', 'kpi_grid', 'Total Gross Investment EUR', total_gross_investment_eur, 3 FROM totals
+
+  UNION ALL
+  SELECT 'main_kpis', 'kpi_grid', 'Proposal to PO Gap', proposal_to_po_gap, 4 FROM totals
+
+  UNION ALL
+  SELECT 'ratio_kpis', 'kpi_grid', 'Technical Cost Rate', technical_cost_rate_eur, 5 FROM totals
+
+  UNION ALL
+  SELECT 'ratio_kpis', 'kpi_grid', 'Agency Fee Rate', agency_fee_rate_eur, 6 FROM totals
+
+  UNION ALL
+  SELECT 'ratio_kpis', 'kpi_grid', 'Media Tax Rate', tax_rate_eur, 7 FROM totals
+
+  UNION ALL
+  SELECT 'ratio_kpis', 'kpi_grid', 'Media Net vs Rate Card Ratio', media_net_vs_rate_card_ratio, 8 FROM totals
+
+  UNION ALL
+  SELECT 'cost_kpis', 'kpi_grid', 'Total Technical Costs EUR', total_technical_costs_eur, 9 FROM totals
+
+  UNION ALL
+  SELECT 'cost_kpis', 'kpi_grid', 'Total Non-Media Costs EUR', total_non_media_costs_eur, 10 FROM totals
+
+  UNION ALL
+  SELECT 'cost_kpis', 'kpi_grid', 'Total Agency Fees EUR', total_media_agency_fees_eur, 11 FROM totals
+
+  UNION ALL
+  SELECT 'cost_kpis', 'kpi_grid', 'Total Media Taxes EUR', total_media_taxes_eur, 12 FROM totals
+
+  UNION ALL
+  SELECT 'cost_kpis', 'kpi_grid', 'Total Rate Card EUR', total_rate_card_eur, 13 FROM totals
+
+  UNION ALL
+  SELECT 'main_kpis', 'kpi_grid', 'Total Purchase Order Amount', total_purchase_order_amount, 14 FROM totals
+
+  UNION ALL
+  SELECT 'main_kpis', 'kpi_grid', 'Total Proposal Amount', total_proposal_amount, 15 FROM totals
+
+  ORDER BY
+    widget_id,
+    sort_order

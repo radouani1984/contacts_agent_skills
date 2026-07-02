@@ -1,0 +1,70 @@
+version: "1.0"
+skill_id: budget_brand_financial_detail
+skill_type: analytical_query
+name: Budget Brand Financial Detail
+description: >
+  Returns a full financial profile with KPI, ratio, monthly and dimensional breakdowns
+  for the filtered budget dataset. Best suited for detailed analysis of one brand,
+  optionally narrowed by country, media, status or workflow.
+endpoint:
+  id: budget_brand_financial_detail
+  method: GET
+use_when:
+  - The user asks for financial details or a full budget profile.
+  - The user wants KPI plus breakdowns, not just a ranking.
+  - The request is about one brand or a tightly filtered slice.
+avoid_when:
+  - The user explicitly asks for a top ranking or leaderboard.
+  - The user only wants a list of possible dimension values.
+parameters:
+  required: []
+  optional:
+    - brand
+    - country
+    - media
+    - status
+    - workflow_process
+  resolve_before_execution:
+    - brand
+    - country
+    - media
+    - status
+    - workflow_process
+response_contract:
+  kind: sectioned_dataset
+  sections:
+    - financial_kpis
+    - financial_ratios
+    - monthly_trend
+    - by_country
+    - by_media
+    - by_media_costs
+    - by_media_fees
+    - by_status
+    - by_workflow
+  row_fields:
+    - section
+    - row_type
+    - label
+    - dimension_value
+    - value
+    - sort_order
+planner_hints:
+  intent: brand_financial_detail
+  retrieval_keywords:
+    - detail
+    - details
+    - financial detail
+    - details financier
+    - profile
+    - vue complete
+    - breakdown
+    - kpi
+    - ratios
+    - monthly trend
+  confidence_signals:
+    - Mention of a brand name.
+    - Request for complete financial view or multiple sections.
+guardrails:
+  - Do not replace this skill with a top ranking endpoint when the user wants a full profile.
+  - Resolve textual filters before execution when the user phrasing is fuzzy.

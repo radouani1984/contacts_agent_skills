@@ -1,0 +1,71 @@
+version: "1.0"
+skill_id: budget_top_countries
+skill_type: analytical_query
+name: Budget Top Countries
+description: >
+  Returns the top countries ranked by a selected metric on the filtered budget dataset.
+  Use it for geographic leaderboard and country comparison requests.
+endpoint:
+  id: budget_top_countries
+  method: GET
+use_when:
+  - The user asks for top countries or classement par pays.
+  - The request is about geographic ranking.
+  - The output should be a table ordered by one metric.
+avoid_when:
+  - The user asks only to resolve or list country values.
+  - The user asks for monthly trend or a brand detail page.
+parameters:
+  required: []
+  optional:
+    - brand
+    - country
+    - media
+    - status
+    - workflow_process
+    - metric
+    - limit
+  defaults:
+    metric: media_net
+    limit: 15
+  accepted_values:
+    metric:
+      - media_net
+      - gross_investment
+      - media_agency_fees
+      - technical_costs
+      - media_taxes
+      - non_media_costs
+      - committed
+      - purchase_order_amount
+      - proposal_amount
+      - proposal_to_po_gap
+      - rate_card
+  resolve_before_execution:
+    - brand
+    - country
+    - media
+    - status
+    - workflow_process
+response_contract:
+  kind: ranking_table
+  row_fields:
+    - rank
+    - label
+    - country
+    - selected_metric
+    - selected_value_eur
+    - row_count
+planner_hints:
+  intent: top_countries
+  retrieval_keywords:
+    - top countries
+    - best countries
+    - countries ranking
+    - classement pays
+    - pays les plus importants
+  confidence_signals:
+    - Country is the entity being compared.
+guardrails:
+  - Use this skill only when country is the ranked entity.
+  - Resolve geographic filters before execution when user terms are fuzzy or abbreviated.

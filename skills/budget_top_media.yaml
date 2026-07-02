@@ -1,0 +1,71 @@
+version: "1.0"
+skill_id: budget_top_media
+skill_type: analytical_query
+name: Budget Top Media
+description: >
+  Returns the top media channels ranked by a selected metric on the filtered budget
+  dataset. Use it for channel comparison and media leaderboard requests.
+endpoint:
+  id: budget_top_media
+  method: GET
+use_when:
+  - The user asks for top media, best channels or classement media.
+  - The request is comparative across media types.
+  - A ranked table is expected.
+avoid_when:
+  - The user asks for a monthly trend.
+  - The user only wants available media values or fuzzy resolution.
+parameters:
+  required: []
+  optional:
+    - brand
+    - country
+    - media
+    - status
+    - workflow_process
+    - metric
+    - limit
+  defaults:
+    metric: media_net
+    limit: 15
+  accepted_values:
+    metric:
+      - media_net
+      - gross_investment
+      - media_agency_fees
+      - technical_costs
+      - media_taxes
+      - non_media_costs
+      - committed
+      - purchase_order_amount
+      - proposal_amount
+      - proposal_to_po_gap
+      - rate_card
+  resolve_before_execution:
+    - brand
+    - country
+    - media
+    - status
+    - workflow_process
+response_contract:
+  kind: ranking_table
+  row_fields:
+    - rank
+    - label
+    - media
+    - selected_metric
+    - selected_value_eur
+    - row_count
+planner_hints:
+  intent: top_media
+  retrieval_keywords:
+    - top media
+    - top channels
+    - media ranking
+    - classement media
+    - best media mix
+  confidence_signals:
+    - Media is the ranked entity.
+guardrails:
+  - If the request contains metric vocabulary only, still keep media as the ranked dimension.
+  - Do not confuse media names with metric names; use resolve_media safeguards when needed.

@@ -1,0 +1,41 @@
+version: "1.0"
+skill_id: filter_media
+skill_type: dimension_listing
+name: Filter Media
+description: >
+  Lists canonical media values available in the budget dataset with normalized variants
+  and aggregate volume hints. Use it for media filter pickers and option discovery.
+endpoint:
+  id: filter_media
+  method: GET
+use_when:
+  - The user asks for available media values.
+  - The planner needs media options for a filter UI.
+  - The agent wants canonical values without fuzzy scoring.
+avoid_when:
+  - The user provides a fuzzy media term.
+parameters:
+  required: []
+  optional:
+    - limit
+  defaults:
+    limit: 100
+response_contract:
+  kind: dimension_values_list
+  row_fields:
+    - rank
+    - value
+    - label
+    - normalized_value
+    - normalized_compact
+    - row_count
+planner_hints:
+  intent: list_media
+  retrieval_keywords:
+    - available media
+    - list media
+    - filter media
+    - media disponibles
+    - canaux disponibles
+guardrails:
+  - Prefer resolve_media when the request uses free text or ambiguous wording.

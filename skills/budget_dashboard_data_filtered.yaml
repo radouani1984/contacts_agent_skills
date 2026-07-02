@@ -1,0 +1,59 @@
+version: "1.0"
+skill_id: budget_dashboard_data_filtered
+skill_type: analytical_query
+name: Budget Dashboard Data Filtered
+description: >
+  Returns dashboard-ready KPI widgets for the filtered budget dataset. This skill is
+  for summary cards and compact overview blocks, not for ranking tables or detailed
+  per-dimension exploration.
+endpoint:
+  id: budget_dashboard_data_filtered
+  method: GET
+use_when:
+  - The user wants a dashboard summary.
+  - The user asks for headline KPIs on a filtered scope.
+  - The UI needs compact widget blocks rather than detailed rows.
+avoid_when:
+  - The user asks for ranked top entities.
+  - The user asks for a monthly series or deep profile sections.
+parameters:
+  required: []
+  optional:
+    - brand
+    - country
+    - media
+    - status
+    - workflow_process
+  resolve_before_execution:
+    - brand
+    - country
+    - media
+    - status
+    - workflow_process
+response_contract:
+  kind: dashboard_widgets
+  widget_ids:
+    - main_kpis
+    - ratio_kpis
+    - cost_kpis
+  row_fields:
+    - widget_id
+    - widget_type
+    - label
+    - value
+    - sort_order
+planner_hints:
+  intent: dashboard_summary
+  retrieval_keywords:
+    - dashboard
+    - summary
+    - overview
+    - synthese
+    - kpi cards
+    - widgets
+  confidence_signals:
+    - User asks for headline numbers.
+    - User does not ask for rank, table or monthly evolution.
+guardrails:
+  - Prefer this skill for compact overview output.
+  - Do not use this skill when the user explicitly needs a leaderboard or time series.

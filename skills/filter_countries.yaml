@@ -1,0 +1,41 @@
+version: "1.0"
+skill_id: filter_countries
+skill_type: dimension_listing
+name: Filter Countries
+description: >
+  Lists canonical country values available in the budget dataset with normalized variants
+  and aggregate volume hints. Use it for country filter pickers and option discovery.
+endpoint:
+  id: filter_countries
+  method: GET
+use_when:
+  - The user asks for available countries.
+  - The planner needs a country option list.
+  - The UI needs canonical filter values.
+avoid_when:
+  - The user gives a fuzzy or abbreviated country that needs resolution.
+parameters:
+  required: []
+  optional:
+    - limit
+  defaults:
+    limit: 100
+response_contract:
+  kind: dimension_values_list
+  row_fields:
+    - rank
+    - value
+    - label
+    - normalized_value
+    - normalized_compact
+    - row_count
+planner_hints:
+  intent: list_countries
+  retrieval_keywords:
+    - available countries
+    - list countries
+    - filter countries
+    - pays disponibles
+    - valeurs pays
+guardrails:
+  - Prefer resolve_country for short forms such as US, UK or fuzzy country names.

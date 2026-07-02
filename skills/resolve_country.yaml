@@ -1,0 +1,44 @@
+version: "1.0"
+skill_id: resolve_country
+skill_type: dimension_resolver
+name: Resolve Country
+description: >
+  Resolves a free-text country query into canonical country values with alias handling
+  for common abbreviations such as US, UK and UAE.
+endpoint:
+  id: resolve_country
+  method: GET
+use_when:
+  - The user mentions a country that may be abbreviated or fuzzy.
+  - The planner needs canonical country values before analytics.
+  - Geographic disambiguation is needed.
+avoid_when:
+  - The user only wants the full list of countries.
+parameters:
+  required:
+    - q
+  optional:
+    - limit
+  defaults:
+    limit: 10
+response_contract:
+  kind: resolution_candidates
+  row_fields:
+    - value
+    - match_type
+    - row_count
+    - edit_distance
+    - similarity_score
+    - length_delta
+    - score
+planner_hints:
+  intent: resolve_country_value
+  retrieval_keywords:
+    - resolve country
+    - match country
+    - normalize country
+    - country alias
+    - pays exact
+guardrails:
+  - Use this for abbreviations and aliases before analytical execution.
+  - Keep the resolved country in params, not the raw user phrase.

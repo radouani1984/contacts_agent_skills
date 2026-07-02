@@ -1,0 +1,126 @@
+# apis/budget_monthly_trend.yaml
+
+type: api
+
+sql: |
+  {{ $brand := .args.brand | default "" | replace "'" "''" }}
+  {{ $country := .args.country | default "" | replace "'" "''" }}
+  {{ $media := .args.media | default "" | replace "'" "''" }}
+  {{ $status := .args.status | default "" | replace "'" "''" }}
+  {{ $workflow_process := .args.workflow_process | default "" | replace "'" "''" }}
+  {{ $metric := .args.metric | default "media_net" | replace "'" "''" }}
+
+  WITH base AS (
+    SELECT *
+    FROM bigquery_budget_model_2025
+    WHERE 1 = 1
+
+    {{ if $brand }}
+      AND LOWER(TRIM(CAST(brand AS VARCHAR))) = LOWER(TRIM('{{ $brand }}'))
+    {{ end }}
+
+    {{ if $country }}
+      AND LOWER(TRIM(CAST(country AS VARCHAR))) = LOWER(TRIM('{{ $country }}'))
+    {{ end }}
+
+    {{ if $media }}
+      AND LOWER(TRIM(CAST(media AS VARCHAR))) = LOWER(TRIM('{{ $media }}'))
+    {{ end }}
+
+    {{ if $status }}
+      AND LOWER(TRIM(CAST(status AS VARCHAR))) = LOWER(TRIM('{{ $status }}'))
+    {{ end }}
+
+    {{ if $workflow_process }}
+      AND LOWER(TRIM(CAST(workflow_process AS VARCHAR))) = LOWER(TRIM('{{ $workflow_process }}'))
+    {{ end }}
+  ),
+
+  aggregated AS (
+    SELECT
+      month_label AS month,
+      CAST(month_date AS VARCHAR) AS month_date,
+      month_number,
+
+      SUM(COALESCE(media_net_eur, 0)) AS total_media_net_eur,
+      SUM(COALESCE(committed_total_eur, 0)) AS total_committed_eur,
+      SUM(COALESCE(committed_gr_amount_eur, 0)) AS total_committed_gr_eur,
+      SUM(COALESCE(committed_media_amount_eur, 0)) AS total_committed_media_eur,
+      SUM(COALESCE(gross_investment_eur, 0)) AS total_gross_investment_eur,
+      SUM(COALESCE(media_agency_fees_eur, 0)) AS total_media_agency_fees_eur,
+      SUM(COALESCE(technical_costs_eur, 0)) AS total_technical_costs_eur,
+      SUM(COALESCE(media_taxes_eur, 0)) AS total_media_taxes_eur,
+      SUM(COALESCE(non_media_costs_eur, 0)) AS total_non_media_costs_eur,
+      SUM(COALESCE(purchase_order_amount, 0)) AS total_purchase_order_amount,
+      SUM(COALESCE(proposal_amount, 0)) AS total_proposal_amount,
+      SUM(COALESCE(rate_card_eur, 0)) AS total_rate_card_eur,
+
+      SUM(COALESCE(purchase_order_amount, 0)) - SUM(COALESCE(proposal_amount, 0)) AS proposal_to_po_gap,
+
+      COUNT(*) AS row_count
+    FROM base
+    GROUP BY month_label, month_date, month_number
+  ),
+
+  metricized AS (
+    SELECT
+      *,
+
+      CASE
+        WHEN '{{ $metric }}' IN (
+          'media_net',
+          'gross_investment',
+          'media_agency_fees',
+          'technical_costs',
+          'media_taxes',
+          'non_media_costs',
+          'committed',
+          'purchase_order_amount',
+          'proposal_amount',
+          'proposal_to_po_gap',
+          'rate_card'
+        )
+        THEN '{{ $metric }}'
+        ELSE 'media_net'
+      END AS selected_metric
+    FROM aggregated
+  )
+
+  SELECT
+    month,
+    month_date,
+    month_number,
+    selected_metric,
+
+    CASE selected_metric
+      WHEN 'gross_investment' THEN total_gross_investment_eur
+      WHEN 'media_agency_fees' THEN total_media_agency_fees_eur
+      WHEN 'technical_costs' THEN total_technical_costs_eur
+      WHEN 'media_taxes' THEN total_media_taxes_eur
+      WHEN 'non_media_costs' THEN total_non_media_costs_eur
+      WHEN 'committed' THEN total_committed_eur
+      WHEN 'purchase_order_amount' THEN total_purchase_order_amount
+      WHEN 'proposal_amount' THEN total_proposal_amount
+      WHEN 'proposal_to_po_gap' THEN proposal_to_po_gap
+      WHEN 'rate_card' THEN total_rate_card_eur
+      ELSE total_media_net_eur
+    END AS selected_value_eur,
+
+    total_media_net_eur,
+    total_committed_eur,
+    total_committed_gr_eur,
+    total_committed_media_eur,
+    total_gross_investment_eur,
+    total_media_agency_fees_eur,
+    total_technical_costs_eur,
+    total_media_taxes_eur,
+    total_non_media_costs_eur,
+    total_purchase_order_amount,
+    total_proposal_amount,
+    proposal_to_po_gap,
+    total_rate_card_eur,
+    row_count
+  FROM metricized
+  ORDER BY
+    month_number ASC,
+    month_date ASC

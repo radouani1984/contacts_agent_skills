@@ -1,0 +1,83 @@
+version: "1.0"
+skill_id: budget_monthly_trend
+skill_type: analytical_query
+name: Budget Monthly Trend
+description: >
+  Returns a month-by-month time series for one selected metric over the filtered budget
+  dataset. Use it for evolution, seasonality and timeline analysis.
+endpoint:
+  id: budget_monthly_trend
+  method: GET
+use_when:
+  - The user asks for monthly evolution or trend.
+  - The request mentions over time, par mois, timeline or seasonality.
+  - The user wants a line chart or month series.
+avoid_when:
+  - The user asks for a full multi-section financial profile.
+  - The user asks for top ranked entities.
+parameters:
+  required: []
+  optional:
+    - brand
+    - country
+    - media
+    - status
+    - workflow_process
+    - metric
+  defaults:
+    metric: media_net
+  accepted_values:
+    metric:
+      - media_net
+      - gross_investment
+      - media_agency_fees
+      - technical_costs
+      - media_taxes
+      - non_media_costs
+      - committed
+      - purchase_order_amount
+      - proposal_amount
+      - proposal_to_po_gap
+      - rate_card
+  resolve_before_execution:
+    - brand
+    - country
+    - media
+    - status
+    - workflow_process
+response_contract:
+  kind: time_series
+  row_fields:
+    - month
+    - month_date
+    - month_number
+    - selected_metric
+    - selected_value_eur
+  extra_fields:
+    - total_media_net_eur
+    - total_committed_eur
+    - total_gross_investment_eur
+    - total_media_agency_fees_eur
+    - total_technical_costs_eur
+    - total_media_taxes_eur
+    - total_non_media_costs_eur
+    - total_purchase_order_amount
+    - total_proposal_amount
+    - proposal_to_po_gap
+    - total_rate_card_eur
+planner_hints:
+  intent: monthly_trend
+  retrieval_keywords:
+    - monthly
+    - trend
+    - evolution
+    - par mois
+    - timeline
+    - seasonality
+    - line chart
+  confidence_signals:
+    - Mention of time.
+    - Mention of one metric moving across months.
+guardrails:
+  - Select a metric explicitly when the user mentions a measure.
+  - Default to media_net only when no metric is requested.

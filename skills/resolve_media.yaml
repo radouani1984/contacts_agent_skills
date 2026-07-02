@@ -1,0 +1,44 @@
+version: "1.0"
+skill_id: resolve_media
+skill_type: dimension_resolver
+name: Resolve Media
+description: >
+  Resolves a free-text media query into canonical media values while avoiding false
+  positives on metric vocabulary such as media net or technical costs.
+endpoint:
+  id: resolve_media
+  method: GET
+use_when:
+  - The user mentions a media value with possible spelling variation.
+  - The planner needs canonical media values before analytics.
+  - Media disambiguation is required.
+avoid_when:
+  - The request is only about the metric name and not a media dimension.
+parameters:
+  required:
+    - q
+  optional:
+    - limit
+  defaults:
+    limit: 10
+response_contract:
+  kind: resolution_candidates
+  row_fields:
+    - value
+    - match_type
+    - row_count
+    - edit_distance
+    - similarity_score
+    - length_delta
+    - score
+planner_hints:
+  intent: resolve_media_value
+  retrieval_keywords:
+    - resolve media
+    - match media
+    - normalize media
+    - find channel
+    - media exacte
+guardrails:
+  - Do not call this resolver when the phrase clearly refers to a metric.
+  - Use this before analytical execution if media input comes from user text.

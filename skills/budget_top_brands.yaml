@@ -1,0 +1,72 @@
+version: "1.0"
+skill_id: budget_top_brands
+skill_type: analytical_query
+name: Budget Top Brands
+description: >
+  Returns the top brands ranked by a selected metric on the filtered budget dataset.
+  Use it for leaderboard, classement and comparative ranking requests.
+endpoint:
+  id: budget_top_brands
+  method: GET
+use_when:
+  - The user asks for top brands, best brands or classement des marques.
+  - The request is comparative and rank-based.
+  - The user wants leaderboard output rather than a detailed brand profile.
+avoid_when:
+  - The user asks for details of one brand.
+  - The user asks for list values only.
+parameters:
+  required: []
+  optional:
+    - brand
+    - country
+    - media
+    - status
+    - workflow_process
+    - metric
+    - limit
+  defaults:
+    metric: media_net
+    limit: 15
+  accepted_values:
+    metric:
+      - media_net
+      - gross_investment
+      - media_agency_fees
+      - technical_costs
+      - media_taxes
+      - non_media_costs
+      - committed
+      - purchase_order_amount
+      - proposal_amount
+      - proposal_to_po_gap
+      - rate_card
+  resolve_before_execution:
+    - brand
+    - country
+    - media
+    - status
+    - workflow_process
+response_contract:
+  kind: ranking_table
+  row_fields:
+    - rank
+    - label
+    - brand
+    - selected_metric
+    - selected_value_eur
+    - row_count
+planner_hints:
+  intent: top_brands
+  retrieval_keywords:
+    - top brands
+    - best brands
+    - leading brands
+    - classement marques
+    - ranking brands
+  confidence_signals:
+    - User explicitly asks for top or ranking.
+    - Brand is the ranked entity, not only a filter.
+guardrails:
+  - Use this skill only when the output entity to rank is brand.
+  - If the user asks for one brand in detail, use budget_brand_financial_detail instead.

@@ -1,0 +1,41 @@
+version: "1.0"
+skill_id: filter_workflows
+skill_type: dimension_listing
+name: Filter Workflows
+description: >
+  Lists canonical workflow values available in the budget dataset with normalized variants
+  and aggregate volume hints. Use it for workflow filter selection and discovery.
+endpoint:
+  id: filter_workflows
+  method: GET
+use_when:
+  - The user asks for available workflows.
+  - The planner needs a workflow option list.
+  - The UI needs canonical workflow values.
+avoid_when:
+  - The user provides a fuzzy workflow phrase that needs resolution.
+parameters:
+  required: []
+  optional:
+    - limit
+  defaults:
+    limit: 100
+response_contract:
+  kind: dimension_values_list
+  row_fields:
+    - rank
+    - value
+    - label
+    - normalized_value
+    - normalized_compact
+    - row_count
+planner_hints:
+  intent: list_workflows
+  retrieval_keywords:
+    - available workflows
+    - list workflows
+    - filter workflows
+    - workflows disponibles
+    - process disponibles
+guardrails:
+  - Prefer resolve_workflow for fuzzy user input.

@@ -1,0 +1,236 @@
+catalog_version: "1.0"
+source_of_truth: skills/*.yaml
+description: >
+  Retrieval index for the Langflow planner agent. This catalog explains how to choose
+  the closest skill, when to call resolver tools first, and which analytical endpoint
+  to select once parameters are normalized.
+global_dimensions:
+  - brand
+  - country
+  - media
+  - status
+  - workflow_process
+shared_metric_vocabulary:
+  - media_net
+  - gross_investment
+  - media_agency_fees
+  - technical_costs
+  - media_taxes
+  - non_media_costs
+  - committed
+  - purchase_order_amount
+  - proposal_amount
+  - proposal_to_po_gap
+  - rate_card
+planner_flow:
+  - Classify the request as analytical_query, dimension_listing or dimension_resolver.
+  - If a user supplied filter is fuzzy, run the corresponding resolve_* skill first.
+  - If the user asks for possible values, use filter_* skills.
+  - If the user asks for ranking, choose the correct budget_top_* skill based on the ranked entity.
+  - If the user asks for evolution over time, choose budget_monthly_trend.
+  - If the user asks for KPI cards or summary, choose budget_dashboard_data_filtered.
+  - If the user asks for a complete financial view of one slice, choose budget_brand_financial_detail.
+resolution_policy:
+  brand: resolve_brand
+  country: resolve_country
+  media: resolve_media
+  status: resolve_status
+  workflow_process: resolve_workflow
+listing_policy:
+  brand: filter_brands
+  country: filter_countries
+  media: filter_media
+  status: filter_statuses
+  workflow_process: filter_workflows
+retrieval_rules:
+  - intent: brand_financial_detail
+    primary_skill: budget_brand_financial_detail
+    triggers:
+      - detail
+      - details financier
+      - profile
+      - full view
+      - breakdown
+      - ratios
+    fallback_skills:
+      - budget_dashboard_data_filtered
+      - budget_monthly_trend
+  - intent: dashboard_summary
+    primary_skill: budget_dashboard_data_filtered
+    triggers:
+      - dashboard
+      - summary
+      - overview
+      - kpi
+      - widgets
+    fallback_skills:
+      - budget_brand_financial_detail
+  - intent: monthly_trend
+    primary_skill: budget_monthly_trend
+    triggers:
+      - trend
+      - monthly
+      - evolution
+      - timeline
+      - par mois
+    fallback_skills:
+      - budget_dashboard_data_filtered
+      - budget_brand_financial_detail
+  - intent: top_brands
+    primary_skill: budget_top_brands
+    triggers:
+      - top brands
+      - best brands
+      - classement marques
+      - ranking brands
+    fallback_skills:
+      - budget_brand_financial_detail
+  - intent: top_countries
+    primary_skill: budget_top_countries
+    triggers:
+      - top countries
+      - best countries
+      - classement pays
+      - ranking countries
+    fallback_skills:
+      - budget_dashboard_data_filtered
+  - intent: top_media
+    primary_skill: budget_top_media
+    triggers:
+      - top media
+      - top channels
+      - classement media
+      - ranking media
+    fallback_skills:
+      - budget_dashboard_data_filtered
+  - intent: list_brands
+    primary_skill: filter_brands
+    triggers:
+      - list brands
+      - available brands
+      - brand values
+  - intent: list_countries
+    primary_skill: filter_countries
+    triggers:
+      - list countries
+      - available countries
+      - country values
+  - intent: list_media
+    primary_skill: filter_media
+    triggers:
+      - list media
+      - available media
+      - media values
+  - intent: list_statuses
+    primary_skill: filter_statuses
+    triggers:
+      - list statuses
+      - available statuses
+      - status values
+  - intent: list_workflows
+    primary_skill: filter_workflows
+    triggers:
+      - list workflows
+      - available workflows
+      - workflow values
+  - intent: resolve_brand_value
+    primary_skill: resolve_brand
+    triggers:
+      - resolve brand
+      - match brand
+      - normalize brand
+  - intent: resolve_country_value
+    primary_skill: resolve_country
+    triggers:
+      - resolve country
+      - match country
+      - normalize country
+  - intent: resolve_media_value
+    primary_skill: resolve_media
+    triggers:
+      - resolve media
+      - match media
+      - normalize media
+  - intent: resolve_status_value
+    primary_skill: resolve_status
+    triggers:
+      - resolve status
+      - match status
+      - normalize status
+  - intent: resolve_workflow_value
+    primary_skill: resolve_workflow
+    triggers:
+      - resolve workflow
+      - match workflow
+      - normalize workflow
+nearest_skill_decision_tree:
+  - If the user asks who is top or ranked, pick the budget_top_* skill matching the entity to rank.
+  - If the user asks how a metric evolves over time, pick budget_monthly_trend.
+  - If the user asks for KPI cards or quick summary, pick budget_dashboard_data_filtered.
+  - If the user asks for detailed financial analysis with multiple sections, pick budget_brand_financial_detail.
+  - If the user asks what values exist for a dimension, pick the matching filter_* skill.
+  - If the user provides a fuzzy dimension value, pick the matching resolve_* skill before any analytical skill.
+output_contract_for_planner:
+  required_fields:
+    - version
+    - component
+    - status
+    - selected_skill
+    - task_type
+    - intent
+    - filters
+    - params
+    - missing_required_params
+    - confidence
+  notes:
+    - The planner must return executable JSON only.
+    - The planner must not answer the end user directly.
+skill_catalog:
+  - skill_id: budget_brand_financial_detail
+    skill_type: analytical_query
+    entity_focus: filtered_slice
+  - skill_id: budget_dashboard_data_filtered
+    skill_type: analytical_query
+    entity_focus: filtered_slice
+  - skill_id: budget_monthly_trend
+    skill_type: analytical_query
+    entity_focus: time_series
+  - skill_id: budget_top_brands
+    skill_type: analytical_query
+    entity_focus: brand_ranking
+  - skill_id: budget_top_countries
+    skill_type: analytical_query
+    entity_focus: country_ranking
+  - skill_id: budget_top_media
+    skill_type: analytical_query
+    entity_focus: media_ranking
+  - skill_id: filter_brands
+    skill_type: dimension_listing
+    entity_focus: brand_values
+  - skill_id: filter_countries
+    skill_type: dimension_listing
+    entity_focus: country_values
+  - skill_id: filter_media
+    skill_type: dimension_listing
+    entity_focus: media_values
+  - skill_id: filter_statuses
+    skill_type: dimension_listing
+    entity_focus: status_values
+  - skill_id: filter_workflows
+    skill_type: dimension_listing
+    entity_focus: workflow_values
+  - skill_id: resolve_brand
+    skill_type: dimension_resolver
+    entity_focus: brand_resolution
+  - skill_id: resolve_country
+    skill_type: dimension_resolver
+    entity_focus: country_resolution
+  - skill_id: resolve_media
+    skill_type: dimension_resolver
+    entity_focus: media_resolution
+  - skill_id: resolve_status
+    skill_type: dimension_resolver
+    entity_focus: status_resolution
+  - skill_id: resolve_workflow
+    skill_type: dimension_resolver
+    entity_focus: workflow_resolution
