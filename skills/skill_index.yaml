@@ -1,9 +1,9 @@
 catalog_version: "1.0"
 source_of_truth: skills/*.yaml
 description: >
-  Retrieval index for the Langflow planner agent. This catalog explains how to choose
-  the closest skill, when to call resolver tools first, and which analytical endpoint
-  to select once parameters are normalized.
+  Retrieval and compiler index for the Langflow planner agent. This catalog explains
+  how to choose the closest skill, which planner contract fields are authoritative,
+  and how the BudgetIntentCompiler should complete missing values deterministically.
 global_dimensions:
   - brand
   - country
@@ -22,8 +22,21 @@ shared_metric_vocabulary:
   - proposal_amount
   - proposal_to_po_gap
   - rate_card
+compiler_policy:
+  use_planner_contract: true
+  selected_skill_is_source_of_truth: true
+  fill_missing_metric_from_skill: true
+  fill_missing_metrics_from_skill: true
+  fill_missing_report_type_from_skill: true
+  fill_missing_task_type_from_skill: true
+  never_return_null: true
+  null_replacements:
+    string: ""
+    dict: {}
+    list: []
 planner_flow:
   - Classify the request as analytical_query, dimension_listing or dimension_resolver.
+  - Call retrieve_rill_skills and use this catalog to rank the nearest skills.
   - If a user supplied filter is fuzzy, run the corresponding resolve_* skill first.
   - If the user asks for possible values, use filter_* skills.
   - If the user asks for ranking, choose the correct budget_top_* skill based on the ranked entity.
@@ -43,19 +56,20 @@ listing_policy:
   status: filter_statuses
   workflow_process: filter_workflows
 retrieval_rules:
-  - intent: brand_financial_detail
+  - intent: brand_financial_profile
     primary_skill: budget_brand_financial_detail
     triggers:
       - detail
       - details financier
-      - profile
+      - financial profile
+      - brand profile
       - full view
       - breakdown
       - ratios
     fallback_skills:
       - budget_dashboard_data_filtered
       - budget_monthly_trend
-  - intent: dashboard_summary
+  - intent: dashboard
     primary_skill: budget_dashboard_data_filtered
     triggers:
       - dashboard
@@ -103,66 +117,18 @@ retrieval_rules:
       - ranking media
     fallback_skills:
       - budget_dashboard_data_filtered
-  - intent: list_brands
+  - intent: list_values
     primary_skill: filter_brands
     triggers:
-      - list brands
-      - available brands
-      - brand values
-  - intent: list_countries
-    primary_skill: filter_countries
-    triggers:
-      - list countries
-      - available countries
-      - country values
-  - intent: list_media
-    primary_skill: filter_media
-    triggers:
-      - list media
-      - available media
-      - media values
-  - intent: list_statuses
-    primary_skill: filter_statuses
-    triggers:
-      - list statuses
-      - available statuses
-      - status values
-  - intent: list_workflows
-    primary_skill: filter_workflows
-    triggers:
-      - list workflows
-      - available workflows
-      - workflow values
-  - intent: resolve_brand_value
+      - available values
+      - list values
+      - filter values
+  - intent: resolve_value
     primary_skill: resolve_brand
     triggers:
-      - resolve brand
-      - match brand
-      - normalize brand
-  - intent: resolve_country_value
-    primary_skill: resolve_country
-    triggers:
-      - resolve country
-      - match country
-      - normalize country
-  - intent: resolve_media_value
-    primary_skill: resolve_media
-    triggers:
-      - resolve media
-      - match media
-      - normalize media
-  - intent: resolve_status_value
-    primary_skill: resolve_status
-    triggers:
-      - resolve status
-      - match status
-      - normalize status
-  - intent: resolve_workflow_value
-    primary_skill: resolve_workflow
-    triggers:
-      - resolve workflow
-      - match workflow
-      - normalize workflow
+      - resolve value
+      - match value
+      - normalize value
 nearest_skill_decision_tree:
   - If the user asks who is top or ranked, pick the budget_top_* skill matching the entity to rank.
   - If the user asks how a metric evolves over time, pick budget_monthly_trend.
@@ -177,60 +143,341 @@ output_contract_for_planner:
     - status
     - selected_skill
     - task_type
-    - intent
+    - report_type
+    - metric
+    - metrics
     - filters
-    - params
-    - missing_required_params
+    - group_by
+    - limit
+    - is_follow_up
+    - keep_missing_context
+    - compare
+    - pivot
     - confidence
+    - clarification
+    - warnings
+    - errors
   notes:
     - The planner must return executable JSON only.
     - The planner must not answer the end user directly.
-skill_catalog:
+skills:
   - skill_id: budget_brand_financial_detail
-    skill_type: analytical_query
-    entity_focus: filtered_slice
+    family: analytical_query
+    report_type: brand_detail
+    intent: brand_financial_profile
+    default_metric: media_net
+    required_filters:
+      - brand
+    optional_filters:
+      - country
+      - media
+      - status
+      - workflow_process
+    aliases:
+      - financial detail
+      - details financier
+      - brand profile
+      - full profile
+    use_when:
+      - The user asks for financial details or a full budget profile.
+      - The user wants KPI plus breakdowns, not just a ranking.
   - skill_id: budget_dashboard_data_filtered
-    skill_type: analytical_query
-    entity_focus: filtered_slice
+    family: analytical_query
+    report_type: dashboard
+    intent: dashboard
+    default_metric: media_net
+    required_filters: []
+    optional_filters:
+      - brand
+      - country
+      - media
+      - status
+      - workflow_process
+    aliases:
+      - dashboard
+      - summary
+      - overview
+      - widgets
+    use_when:
+      - The user wants a dashboard summary.
+      - The user asks for headline KPIs on a filtered scope.
   - skill_id: budget_monthly_trend
-    skill_type: analytical_query
-    entity_focus: time_series
+    family: analytical_query
+    report_type: monthly_trend
+    intent: monthly_trend
+    default_metric: media_net
+    required_filters: []
+    optional_filters:
+      - brand
+      - country
+      - media
+      - status
+      - workflow_process
+    aliases:
+      - monthly trend
+      - evolution
+      - par mois
+      - timeline
+    use_when:
+      - The user asks for monthly evolution or trend.
+      - The user wants a line chart or month series.
   - skill_id: budget_top_brands
-    skill_type: analytical_query
-    entity_focus: brand_ranking
+    family: analytical_query
+    report_type: top_brands
+    intent: top_brands
+    default_metric: media_net
+    required_filters: []
+    optional_filters:
+      - brand
+      - country
+      - media
+      - status
+      - workflow_process
+    aliases:
+      - top brands
+      - best brands
+      - classement marques
+      - ranking brands
+    use_when:
+      - The user asks for top brands, best brands or classement des marques.
+      - The request is comparative and rank-based.
   - skill_id: budget_top_countries
-    skill_type: analytical_query
-    entity_focus: country_ranking
+    family: analytical_query
+    report_type: top_countries
+    intent: top_countries
+    default_metric: media_net
+    required_filters: []
+    optional_filters:
+      - brand
+      - country
+      - media
+      - status
+      - workflow_process
+    aliases:
+      - top countries
+      - best countries
+      - classement pays
+      - ranking countries
+    use_when:
+      - The user asks for top countries or classement par pays.
+      - The request is about geographic ranking.
   - skill_id: budget_top_media
-    skill_type: analytical_query
-    entity_focus: media_ranking
+    family: analytical_query
+    report_type: top_media
+    intent: top_media
+    default_metric: media_net
+    required_filters: []
+    optional_filters:
+      - brand
+      - country
+      - media
+      - status
+      - workflow_process
+    aliases:
+      - top media
+      - top channels
+      - classement media
+      - ranking media
+    use_when:
+      - The user asks for top media, best channels or classement media.
+      - The request is comparative across media types.
   - skill_id: filter_brands
-    skill_type: dimension_listing
-    entity_focus: brand_values
+    family: dimension_listing
+    report_type: ""
+    intent: list_values
+    default_metric: ""
+    required_filters: []
+    optional_filters: []
+    aliases:
+      - available brands
+      - list brands
+      - filter brands
+    use_when:
+      - The user asks for available brands.
+      - The planner needs a list source for a picker or disambiguation UI.
   - skill_id: filter_countries
-    skill_type: dimension_listing
-    entity_focus: country_values
+    family: dimension_listing
+    report_type: ""
+    intent: list_values
+    default_metric: ""
+    required_filters: []
+    optional_filters: []
+    aliases:
+      - available countries
+      - list countries
+      - filter countries
+    use_when:
+      - The user asks for available countries.
+      - The planner needs a country option list.
   - skill_id: filter_media
-    skill_type: dimension_listing
-    entity_focus: media_values
+    family: dimension_listing
+    report_type: ""
+    intent: list_values
+    default_metric: ""
+    required_filters: []
+    optional_filters: []
+    aliases:
+      - available media
+      - list media
+      - filter media
+    use_when:
+      - The user asks for available media values.
+      - The planner needs media options for a filter UI.
   - skill_id: filter_statuses
-    skill_type: dimension_listing
-    entity_focus: status_values
+    family: dimension_listing
+    report_type: ""
+    intent: list_values
+    default_metric: ""
+    required_filters: []
+    optional_filters: []
+    aliases:
+      - available statuses
+      - list statuses
+      - filter statuses
+    use_when:
+      - The user asks for available statuses.
+      - The planner needs a closed list of status values.
   - skill_id: filter_workflows
-    skill_type: dimension_listing
-    entity_focus: workflow_values
+    family: dimension_listing
+    report_type: ""
+    intent: list_values
+    default_metric: ""
+    required_filters: []
+    optional_filters: []
+    aliases:
+      - available workflows
+      - list workflows
+      - filter workflows
+    use_when:
+      - The user asks for available workflows.
+      - The planner needs a workflow option list.
   - skill_id: resolve_brand
-    skill_type: dimension_resolver
-    entity_focus: brand_resolution
+    family: dimension_resolver
+    report_type: ""
+    intent: resolve_value
+    default_metric: ""
+    required_filters: []
+    optional_filters: []
+    aliases:
+      - resolve brand
+      - match brand
+      - normalize brand
+    use_when:
+      - The user mentions a brand with possible spelling variation.
+      - The planner needs canonical brand values before executing an analytical query.
   - skill_id: resolve_country
-    skill_type: dimension_resolver
-    entity_focus: country_resolution
+    family: dimension_resolver
+    report_type: ""
+    intent: resolve_value
+    default_metric: ""
+    required_filters: []
+    optional_filters: []
+    aliases:
+      - resolve country
+      - match country
+      - normalize country
+    use_when:
+      - The user mentions a country that may be abbreviated or fuzzy.
+      - The planner needs canonical country values before analytics.
   - skill_id: resolve_media
-    skill_type: dimension_resolver
-    entity_focus: media_resolution
+    family: dimension_resolver
+    report_type: ""
+    intent: resolve_value
+    default_metric: ""
+    required_filters: []
+    optional_filters: []
+    aliases:
+      - resolve media
+      - match media
+      - normalize media
+    use_when:
+      - The user mentions a media value with possible spelling variation.
+      - The planner needs canonical media values before analytics.
   - skill_id: resolve_status
-    skill_type: dimension_resolver
-    entity_focus: status_resolution
+    family: dimension_resolver
+    report_type: ""
+    intent: resolve_value
+    default_metric: ""
+    required_filters: []
+    optional_filters: []
+    aliases:
+      - resolve status
+      - match status
+      - normalize status
+    use_when:
+      - The user mentions a status that may be fuzzy or partial.
+      - The planner needs canonical status values before analytics.
   - skill_id: resolve_workflow
-    skill_type: dimension_resolver
-    entity_focus: workflow_resolution
+    family: dimension_resolver
+    report_type: ""
+    intent: resolve_value
+    default_metric: ""
+    required_filters: []
+    optional_filters: []
+    aliases:
+      - resolve workflow
+      - match workflow
+      - normalize workflow
+    use_when:
+      - The user mentions a workflow that may be fuzzy or partial.
+      - The planner needs canonical workflow values before analytics.
+routing_examples:
+  - user: "Details financier sur Fructis"
+    selected_skill: budget_brand_financial_detail
+    expected_intent:
+      task_type: query
+      report_type: brand_detail
+      metric: media_net
+      metrics:
+        - media_net
+        - gross_investment
+        - committed
+        - proposal_amount
+        - purchase_order_amount
+        - technical_costs
+        - media_agency_fees
+        - media_taxes
+        - rate_card
+      filters:
+        - dimension: brand
+          source_value: Fructis
+  - user: "Top brands"
+    selected_skill: budget_top_brands
+    expected_intent:
+      task_type: query
+      report_type: top_brands
+      metric: media_net
+      metrics:
+        - media_net
+      filters: []
+  - user: "Top brands in France"
+    selected_skill: budget_top_brands
+    expected_intent:
+      task_type: query
+      report_type: top_brands
+      metric: media_net
+      metrics:
+        - media_net
+      filters:
+        - dimension: country
+          source_value: France
+  - user: "Top countries by media agency fees"
+    selected_skill: budget_top_countries
+    expected_intent:
+      task_type: query
+      report_type: top_countries
+      metric: media_agency_fees
+      metrics:
+        - media_agency_fees
+      filters: []
+  - user: "Monthly trend for Fructis"
+    selected_skill: budget_monthly_trend
+    expected_intent:
+      task_type: query
+      report_type: monthly_trend
+      metric: media_net
+      metrics:
+        - media_net
+      filters:
+        - dimension: brand
+          source_value: Fructis
