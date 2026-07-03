@@ -1,0 +1,215 @@
+# apis/resolve_subbrand.yaml
+
+type: api
+
+sql: |
+  {{ $q := .args.q | default "" | replace "'" "''" }}
+
+  WITH raw_input AS (
+    SELECT '{{ $q }}' AS raw_q
+  ),
+
+  input_normalized AS (
+    SELECT
+      raw_q,
+
+      TRIM(
+        REGEXP_REPLACE(
+          lower(strip_accents(CAST(raw_q AS VARCHAR))),
+          '[^a-z0-9]+',
+          ' ',
+          'g'
+        )
+      ) AS q_text,
+
+      REGEXP_REPLACE(
+        lower(strip_accents(CAST(raw_q AS VARCHAR))),
+        '[^a-z0-9]+',
+        '',
+        'g'
+      ) AS q_compact
+    FROM raw_input
+  ),
+
+  input AS (
+    SELECT
+      raw_q,
+      q_text,
+      q_compact,
+      LENGTH(q_compact) AS q_len,
+
+      CASE
+        WHEN LENGTH(q_compact) <= 2 THEN 0
+        WHEN LENGTH(q_compact) <= 4 THEN 1
+        WHEN LENGTH(q_compact) <= 8 THEN 2
+        WHEN LENGTH(q_compact) <= 14 THEN 3
+        WHEN LENGTH(q_compact) <= 24 THEN 4
+        ELSE 5
+      END AS max_edit_distance,
+
+      CASE
+        WHEN LENGTH(q_compact) <= 4 THEN 0.96
+        WHEN LENGTH(q_compact) <= 8 THEN 0.92
+        WHEN LENGTH(q_compact) <= 14 THEN 0.88
+        ELSE 0.84
+      END AS min_similarity_score
+    FROM input_normalized
+  ),
+
+  canonical_values AS (
+    SELECT
+      subbrand AS value,
+
+      TRIM(
+        REGEXP_REPLACE(
+          lower(strip_accents(CAST(subbrand AS VARCHAR))),
+          '[^a-z0-9]+',
+          ' ',
+          'g'
+        )
+      ) AS normalized_text,
+
+      REGEXP_REPLACE(
+        lower(strip_accents(CAST(subbrand AS VARCHAR))),
+        '[^a-z0-9]+',
+        '',
+        'g'
+      ) AS normalized_compact,
+
+      COUNT(*) AS row_count
+    FROM bigquery_budget_model_2025
+    WHERE subbrand IS NOT NULL
+      AND TRIM(CAST(subbrand AS VARCHAR)) <> ''
+    GROUP BY subbrand
+  ),
+
+  scored_base AS (
+    SELECT
+      value,
+      row_count,
+      normalized_text,
+      normalized_compact,
+      q_text,
+      q_compact,
+      q_len,
+      max_edit_distance,
+      min_similarity_score,
+      ABS(LENGTH(normalized_compact) - LENGTH(q_compact)) AS length_delta,
+      levenshtein(normalized_compact, q_compact) AS edit_distance,
+      jaro_winkler_similarity(normalized_compact, q_compact) AS similarity_score
+    FROM canonical_values
+    CROSS JOIN input
+  ),
+
+  scored AS (
+    SELECT
+      *,
+
+      CASE
+        WHEN q_compact IS NULL OR q_compact = '' THEN 'none'
+
+        WHEN normalized_text = q_text
+          OR normalized_compact = q_compact
+          THEN 'exact'
+
+        WHEN normalized_text LIKE CONCAT(q_text, '%')
+          OR normalized_compact LIKE CONCAT(q_compact, '%')
+          THEN 'starts_with'
+
+        WHEN normalized_text LIKE CONCAT('%', q_text, '%')
+          OR normalized_compact LIKE CONCAT('%', q_compact, '%')
+          THEN 'contains'
+
+        WHEN q_text LIKE CONCAT('%', normalized_text, '%')
+          OR q_compact LIKE CONCAT('%', normalized_compact, '%')
+          THEN 'included'
+
+        WHEN q_len >= 3
+          AND (
+            edit_distance <= max_edit_distance
+            OR (
+              q_len >= 6
+              AND similarity_score >= min_similarity_score
+              AND length_delta <= max_edit_distance + 2
+            )
+          )
+          THEN 'fuzzy'
+
+        ELSE 'none'
+      END AS match_type,
+
+      CASE
+        WHEN q_compact IS NULL OR q_compact = '' THEN 99
+
+        WHEN normalized_text = q_text
+          OR normalized_compact = q_compact
+          THEN 1
+
+        WHEN normalized_text LIKE CONCAT(q_text, '%')
+          OR normalized_compact LIKE CONCAT(q_compact, '%')
+          THEN 2
+
+        WHEN normalized_text LIKE CONCAT('%', q_text, '%')
+          OR normalized_compact LIKE CONCAT('%', q_compact, '%')
+          THEN 3
+
+        WHEN q_text LIKE CONCAT('%', normalized_text, '%')
+          OR q_compact LIKE CONCAT('%', normalized_compact, '%')
+          THEN 4
+
+        WHEN q_len >= 3
+          AND (
+            edit_distance <= max_edit_distance
+            OR (
+              q_len >= 6
+              AND similarity_score >= min_similarity_score
+              AND length_delta <= max_edit_distance + 2
+            )
+          )
+          THEN 5
+
+        ELSE 99
+      END AS match_rank
+    FROM scored_base
+  ),
+
+  ranked AS (
+    SELECT
+      value,
+      match_type,
+      row_count,
+      edit_distance,
+      similarity_score,
+      length_delta,
+
+      CASE
+        WHEN match_rank = 1 THEN 1.00
+        WHEN match_rank = 2 THEN 0.95
+        WHEN match_rank = 3 THEN 0.90
+        WHEN match_rank = 4 THEN 0.85
+        WHEN match_rank = 5 THEN similarity_score
+        ELSE 0.00
+      END AS score,
+
+      match_rank
+    FROM scored
+    WHERE match_type <> 'none'
+  )
+
+  SELECT
+    value,
+    match_type,
+    row_count,
+    edit_distance,
+    similarity_score,
+    length_delta,
+    score
+  FROM ranked
+  ORDER BY
+    match_rank ASC,
+    edit_distance ASC,
+    similarity_score DESC,
+    length_delta ASC,
+    row_count DESC,
+    value ASC
+  LIMIT {{ default 10 .args.limit }}

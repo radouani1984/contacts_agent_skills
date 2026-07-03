@@ -1,0 +1,85 @@
+version: "1.0"
+skill_id: resolve_product
+skill_type: dimension_resolver
+name: Resolve Product
+description: >
+  Resolves a free-text product query into the closest canonical product values using exact,
+  prefix, contains and fuzzy matching with confidence scores.
+endpoint:
+  id: resolve_product
+  method: GET
+use_when:
+  - The user mentions a product with possible spelling variation.
+  - The planner needs canonical product values before executing an analytical query.
+  - A top-k disambiguation list is needed.
+avoid_when:
+  - The user only wants to browse all products.
+parameters:
+  required:
+    - q
+  optional:
+    - limit
+  defaults:
+    limit: 10
+response_contract:
+  kind: resolution_candidates
+  row_fields:
+    - value
+    - match_type
+    - row_count
+    - edit_distance
+    - similarity_score
+    - length_delta
+    - score
+planner_hints:
+  intent: resolve_product_value
+  retrieval_keywords:
+    - resolve product
+    - match product
+    - normalize product
+    - find product
+    - product exacte
+guardrails:
+  - Use this before analytical skills when product input is free text.
+  - Accept exact match directly when score is 1.0; otherwise keep top candidates for validation.
+planner_contract:
+  task_type: resolve
+  intent: resolve_value
+  report_type: ""
+  metric: ""
+  metrics: []
+  dimension: product
+  required_inputs:
+    - q
+  limit: 10
+  compiler_hints:
+    never_return_null: true
+    empty_string_for_missing_scalar: true
+    empty_dict_for_missing_object: true
+    empty_list_for_missing_array: true
+output_contract:
+  langflow_safe:
+    never_return_null: true
+    missing_string: ""
+    missing_object: {}
+    missing_array: []
+  planner_output_fields:
+    - version
+    - component
+    - status
+    - selected_skill
+    - task_type
+    - report_type
+    - metric
+    - metrics
+    - filters
+    - group_by
+    - limit
+    - is_follow_up
+    - keep_missing_context
+    - compare
+    - pivot
+    - confidence
+    - clarification
+    - warnings
+    - errors

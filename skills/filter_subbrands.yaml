@@ -1,0 +1,83 @@
+version: "1.0"
+skill_id: filter_subbrands
+skill_type: dimension_listing
+name: Filter Subbrands
+description: >
+  Lists canonical subbrand values available in the budget dataset with normalized variants
+  and aggregate volume hints. Use it when the agent needs available subbrand options.
+endpoint:
+  id: filter_subbrands
+  method: GET
+use_when:
+  - The user asks for available subbrands.
+  - The planner needs a list source for a picker or disambiguation UI.
+  - The agent needs canonical values without fuzzy search.
+avoid_when:
+  - The user provides a fuzzy subbrand that needs matching.
+parameters:
+  required: []
+  optional:
+    - limit
+  defaults:
+    limit: 100
+response_contract:
+  kind: dimension_values_list
+  row_fields:
+    - rank
+    - value
+    - label
+    - normalized_value
+    - normalized_compact
+    - row_count
+planner_hints:
+  intent: list_brands
+  retrieval_keywords:
+    - available subbrands
+    - list subbrands
+    - filter subbrands
+    - subbrands disponibles
+    - valeurs subbrand
+guardrails:
+  - Prefer resolve_brand when the input is user-provided free text.
+  - Use this skill for option listing, not ranking or financial analysis.
+planner_contract:
+  task_type: list
+  intent: list_values
+  report_type: ""
+  metric: ""
+  metrics: []
+  dimension: subbrand
+  required_filters: []
+  optional_filters: []
+  limit: 20
+  compiler_hints:
+    never_return_null: true
+    empty_string_for_missing_scalar: true
+    empty_dict_for_missing_object: true
+    empty_list_for_missing_array: true
+output_contract:
+  langflow_safe:
+    never_return_null: true
+    missing_string: ""
+    missing_object: {}
+    missing_array: []
+  planner_output_fields:
+    - version
+    - component
+    - status
+    - selected_skill
+    - task_type
+    - report_type
+    - metric
+    - metrics
+    - filters
+    - group_by
+    - limit
+    - is_follow_up
+    - keep_missing_context
+    - compare
+    - pivot
+    - confidence
+    - clarification
+    - warnings
+    - errors

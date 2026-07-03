@@ -1,0 +1,122 @@
+version: "1.0"
+skill_id: budget_compare_metrics
+skill_type: analytical_query
+name: Budget Compare Metrics
+description: >
+  Compares two budget metrics on the same filtered scope, or compares the same
+  filtered scope split by a dimension such as country, brand, media, subbrand or
+  workflow. The endpoint returns long-form rows suitable for comparator cards and
+  side-by-side tables.
+endpoint:
+  id: budget_compare_metrics
+  method: GET
+use_when:
+  - The user asks to compare two metrics.
+  - The user asks to compare two countries, brands, media, subbrands or statuses.
+  - The request uses wording such as compare, comparaison, versus, vs or ecart.
+avoid_when:
+  - The user asks for a simple top ranking.
+  - The user asks for a pivot table with row and column dimensions.
+parameters:
+  required: []
+  optional:
+    - brand
+    - country
+    - media
+    - subbrand
+    - product
+    - submedia
+    - status
+    - workflow_process
+    - flight_status
+    - flight_progress
+    - metric_a
+    - metric_b
+    - compare_dimension
+    - value_a
+    - value_b
+  defaults:
+    metric_a: media_net
+    metric_b: gross_investment
+response_contract:
+  kind: comparison_dataset
+  row_fields:
+    - segment
+    - metric
+    - value_eur
+    - row_count
+    - compare_dimension
+planner_hints:
+  intent: compare_metrics
+  retrieval_keywords:
+    - compare
+    - comparaison
+    - versus
+    - vs
+    - ecart
+    - side by side
+planner_contract:
+  task_type: compare
+  intent: compare
+  report_type: compare
+  default_metric: media_net
+  default_metrics:
+    - media_net
+    - gross_investment
+  accepted_metrics:
+    - media_net
+    - gross_investment
+    - media_agency_fees
+    - technical_costs
+    - media_taxes
+    - non_media_costs
+    - committed
+    - purchase_order_amount
+    - proposal_amount
+    - proposal_to_po_gap
+    - rate_card
+  optional_filters:
+    - brand
+    - country
+    - media
+    - subbrand
+    - product
+    - submedia
+    - status
+    - workflow_process
+    - flight_status
+    - flight_progress
+  group_by: []
+  limit: 100
+output_contract:
+  langflow_safe:
+    never_return_null: true
+    missing_string: ""
+    missing_object: {}
+    missing_array: []
+metric_column_mapping:
+  media_net: media_net
+  gross_investment: gross_investment
+  media_agency_fees: media_agency_fees
+  technical_costs: technical_costs
+  media_taxes: media_taxes
+  non_media_costs: non_media_costs
+  committed: committed
+  purchase_order_amount: purchase_order_amount
+  proposal_amount: proposal_amount
+  proposal_to_po_gap: proposal_to_po_gap
+  rate_card: rate_card
+filter_contract:
+  allowed_dimensions:
+    - brand
+    - country
+    - media
+    - subbrand
+    - product
+    - submedia
+    - status
+    - workflow_process
+    - flight_status
+    - flight_progress
+  resolver_required_for_user_values: true
+  preserve_source_value: true

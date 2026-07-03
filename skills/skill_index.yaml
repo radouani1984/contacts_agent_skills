@@ -7,9 +7,16 @@ description: >
 global_dimensions:
   - brand
   - country
+  - region
   - media
+  - subbrand
+  - product
+  - submedia
+  - digital_lever
   - status
   - workflow_process
+  - flight_status
+  - flight_progress
 shared_metric_vocabulary:
   - media_net
   - gross_investment
@@ -43,16 +50,24 @@ planner_flow:
   - If the user asks for evolution over time, choose budget_monthly_trend.
   - If the user asks for KPI cards or summary, choose budget_dashboard_data_filtered.
   - If the user asks for a complete financial view of one slice, choose budget_brand_financial_detail.
+  - If the user asks to compare metrics or compare two dimension values, choose budget_compare_metrics.
+  - If the user asks for a tableau croise dynamique or row/column matrix, choose budget_pivot_table.
 resolution_policy:
   brand: resolve_brand
   country: resolve_country
   media: resolve_media
+  subbrand: resolve_subbrand
+  product: resolve_product
+  submedia: resolve_submedia
   status: resolve_status
   workflow_process: resolve_workflow
 listing_policy:
   brand: filter_brands
   country: filter_countries
   media: filter_media
+  subbrand: filter_subbrands
+  product: filter_products
+  submedia: filter_submedia
   status: filter_statuses
   workflow_process: filter_workflows
 retrieval_rules:
@@ -117,6 +132,26 @@ retrieval_rules:
       - ranking media
     fallback_skills:
       - budget_dashboard_data_filtered
+  - intent: compare
+    primary_skill: budget_compare_metrics
+    triggers:
+      - compare
+      - comparaison
+      - versus
+      - vs
+      - ecart
+    fallback_skills:
+      - budget_dashboard_data_filtered
+  - intent: pivot
+    primary_skill: budget_pivot_table
+    triggers:
+      - pivot
+      - tableau croise
+      - tableau croisé
+      - matrix
+      - cross tab
+    fallback_skills:
+      - budget_top_brands
   - intent: list_values
     primary_skill: filter_brands
     triggers:
@@ -131,6 +166,8 @@ retrieval_rules:
       - normalize value
 nearest_skill_decision_tree:
   - If the user asks who is top or ranked, pick the budget_top_* skill matching the entity to rank.
+  - If the user asks to compare two metrics or two dimension values, pick budget_compare_metrics.
+  - If the user asks for a pivot table with rows and columns, pick budget_pivot_table.
   - If the user asks how a metric evolves over time, pick budget_monthly_trend.
   - If the user asks for KPI cards or quick summary, pick budget_dashboard_data_filtered.
   - If the user asks for detailed financial analysis with multiple sections, pick budget_brand_financial_detail.
@@ -171,6 +208,9 @@ skills:
     optional_filters:
       - country
       - media
+      - subbrand
+      - product
+      - submedia
       - status
       - workflow_process
     aliases:
@@ -191,6 +231,9 @@ skills:
       - brand
       - country
       - media
+      - subbrand
+      - product
+      - submedia
       - status
       - workflow_process
     aliases:
@@ -211,6 +254,9 @@ skills:
       - brand
       - country
       - media
+      - subbrand
+      - product
+      - submedia
       - status
       - workflow_process
     aliases:
@@ -231,6 +277,9 @@ skills:
       - brand
       - country
       - media
+      - subbrand
+      - product
+      - submedia
       - status
       - workflow_process
     aliases:
@@ -251,6 +300,9 @@ skills:
       - brand
       - country
       - media
+      - subbrand
+      - product
+      - submedia
       - status
       - workflow_process
     aliases:
@@ -271,6 +323,9 @@ skills:
       - brand
       - country
       - media
+      - subbrand
+      - product
+      - submedia
       - status
       - workflow_process
     aliases:
@@ -281,6 +336,56 @@ skills:
     use_when:
       - The user asks for top media, best channels or classement media.
       - The request is comparative across media types.
+  - skill_id: budget_compare_metrics
+    family: analytical_query
+    report_type: compare
+    intent: compare
+    default_metric: media_net
+    required_filters: []
+    optional_filters:
+      - brand
+      - country
+      - media
+      - subbrand
+      - product
+      - submedia
+      - status
+      - workflow_process
+      - flight_status
+      - flight_progress
+    aliases:
+      - compare
+      - comparaison
+      - versus
+      - vs
+    use_when:
+      - The user asks to compare two metrics or two dimension values.
+      - The request should return side-by-side values.
+  - skill_id: budget_pivot_table
+    family: analytical_query
+    report_type: pivot
+    intent: pivot
+    default_metric: media_net
+    required_filters: []
+    optional_filters:
+      - brand
+      - country
+      - media
+      - subbrand
+      - product
+      - submedia
+      - status
+      - workflow_process
+      - flight_status
+      - flight_progress
+    aliases:
+      - pivot
+      - tableau croise
+      - tableau croisé
+      - matrix
+    use_when:
+      - The user asks for a pivot table with row and column dimensions.
+      - The request should cross two budget dimensions.
   - skill_id: filter_brands
     family: dimension_listing
     report_type: ""
@@ -323,6 +428,48 @@ skills:
     use_when:
       - The user asks for available media values.
       - The planner needs media options for a filter UI.
+  - skill_id: filter_subbrands
+    family: dimension_listing
+    report_type: ""
+    intent: list_values
+    default_metric: ""
+    required_filters: []
+    optional_filters: []
+    aliases:
+      - available subbrands
+      - list subbrands
+      - filter subbrands
+    use_when:
+      - The user asks for available subbrands.
+      - The planner needs subbrand options for a filter UI.
+  - skill_id: filter_products
+    family: dimension_listing
+    report_type: ""
+    intent: list_values
+    default_metric: ""
+    required_filters: []
+    optional_filters: []
+    aliases:
+      - available products
+      - list products
+      - filter products
+    use_when:
+      - The user asks for available products.
+      - The planner needs product options for a filter UI.
+  - skill_id: filter_submedia
+    family: dimension_listing
+    report_type: ""
+    intent: list_values
+    default_metric: ""
+    required_filters: []
+    optional_filters: []
+    aliases:
+      - available submedia
+      - list submedia
+      - filter submedia
+    use_when:
+      - The user asks for available submedia values.
+      - The planner needs submedia options for a filter UI.
   - skill_id: filter_statuses
     family: dimension_listing
     report_type: ""
@@ -393,6 +540,48 @@ skills:
     use_when:
       - The user mentions a media value with possible spelling variation.
       - The planner needs canonical media values before analytics.
+  - skill_id: resolve_subbrand
+    family: dimension_resolver
+    report_type: ""
+    intent: resolve_value
+    default_metric: ""
+    required_filters: []
+    optional_filters: []
+    aliases:
+      - resolve subbrand
+      - match subbrand
+      - normalize subbrand
+    use_when:
+      - The user mentions a subbrand with possible spelling variation.
+      - The planner needs canonical subbrand values before analytics.
+  - skill_id: resolve_product
+    family: dimension_resolver
+    report_type: ""
+    intent: resolve_value
+    default_metric: ""
+    required_filters: []
+    optional_filters: []
+    aliases:
+      - resolve product
+      - match product
+      - normalize product
+    use_when:
+      - The user mentions a product with possible spelling variation.
+      - The planner needs canonical product values before analytics.
+  - skill_id: resolve_submedia
+    family: dimension_resolver
+    report_type: ""
+    intent: resolve_value
+    default_metric: ""
+    required_filters: []
+    optional_filters: []
+    aliases:
+      - resolve submedia
+      - match submedia
+      - normalize submedia
+    use_when:
+      - The user mentions a submedia value with possible spelling variation.
+      - The planner needs canonical submedia values before analytics.
   - skill_id: resolve_status
     family: dimension_resolver
     report_type: ""

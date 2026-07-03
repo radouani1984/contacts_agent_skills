@@ -1,16 +1,15 @@
-# apis/filter_countries.yaml
+# apis/filter_products.yaml
 
 type: api
-
 
 sql: |
   WITH values AS (
     SELECT
-      country AS value,
+      product AS value,
 
       TRIM(
         REGEXP_REPLACE(
-          STRIP_ACCENTS(LOWER(CAST(country AS VARCHAR))),
+          STRIP_ACCENTS(LOWER(CAST(product AS VARCHAR))),
           '[^a-z0-9]+',
           ' ',
           'g'
@@ -18,14 +17,13 @@ sql: |
       ) AS normalized_value,
 
       REGEXP_REPLACE(
-        STRIP_ACCENTS(LOWER(CAST(country AS VARCHAR))),
+        STRIP_ACCENTS(LOWER(CAST(product AS VARCHAR))),
         '[^a-z0-9]+',
         '',
         'g'
       ) AS normalized_compact,
 
       COUNT(*) AS row_count,
-
       SUM(COALESCE(committed_total_eur, 0)) AS total_committed_eur,
       SUM(COALESCE(gross_investment_eur, 0)) AS total_gross_investment_eur,
       SUM(COALESCE(media_net_eur, 0)) AS total_media_net_eur,
@@ -33,27 +31,22 @@ sql: |
       SUM(COALESCE(technical_costs_eur, 0)) AS total_technical_costs_eur,
       SUM(COALESCE(media_taxes_eur, 0)) AS total_media_taxes_eur,
       SUM(COALESCE(non_media_costs_eur, 0)) AS total_non_media_costs_eur
-
     FROM bigquery_budget_model_2025
-    WHERE country IS NOT NULL
-      AND TRIM(CAST(country AS VARCHAR)) <> ''
-    GROUP BY country
+    WHERE product IS NOT NULL
+      AND TRIM(CAST(product AS VARCHAR)) <> ''
+    GROUP BY product
   ),
 
   ranked AS (
     SELECT
       ROW_NUMBER() OVER (
-        ORDER BY
-          row_count DESC,
-          value ASC
+        ORDER BY row_count DESC, value ASC
       ) AS rank,
-
       value,
       value AS label,
       normalized_value,
       normalized_compact,
       row_count,
-
       total_committed_eur,
       total_gross_investment_eur,
       total_media_net_eur,
@@ -64,10 +57,7 @@ sql: |
     FROM values
   )
 
-  SELECT
-    *
+  SELECT *
   FROM ranked
-  ORDER BY
-    row_count DESC,
-    value ASC
+  ORDER BY row_count DESC, value ASC
   LIMIT {{ default 100 .args.limit }}

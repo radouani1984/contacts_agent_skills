@@ -1,0 +1,122 @@
+version: "1.0"
+skill_id: budget_pivot_table
+skill_type: analytical_query
+name: Budget Pivot Table
+description: >
+  Builds a long-form pivot dataset for one metric by row and column dimensions.
+  Use it when the user asks for a tableau croise dynamique, matrix, pivot table,
+  rows/columns breakdown or cross-tab.
+endpoint:
+  id: budget_pivot_table
+  method: GET
+use_when:
+  - The user asks for a pivot table or tableau croise dynamique.
+  - The user specifies rows and columns.
+  - The answer should cross two dimensions such as brand by country or media by month.
+avoid_when:
+  - The user only asks for one-dimensional ranking.
+  - The user asks to compare two scalar metrics without row and column dimensions.
+parameters:
+  required: []
+  optional:
+    - brand
+    - country
+    - media
+    - subbrand
+    - product
+    - submedia
+    - status
+    - workflow_process
+    - flight_status
+    - flight_progress
+    - row_dimension
+    - column_dimension
+    - metric
+    - limit
+  defaults:
+    row_dimension: brand
+    column_dimension: country
+    metric: media_net
+    limit: 500
+response_contract:
+  kind: pivot_long_form
+  row_fields:
+    - row_value
+    - column_value
+    - row_dimension
+    - column_dimension
+    - selected_metric
+    - value_eur
+    - row_count
+planner_hints:
+  intent: pivot_table
+  retrieval_keywords:
+    - pivot
+    - tableau croise
+    - tableau croisé
+    - matrix
+    - cross tab
+    - rows columns
+planner_contract:
+  task_type: pivot
+  intent: pivot
+  report_type: pivot
+  default_metric: media_net
+  accepted_metrics:
+    - media_net
+    - gross_investment
+    - media_agency_fees
+    - technical_costs
+    - media_taxes
+    - non_media_costs
+    - committed
+    - purchase_order_amount
+    - proposal_amount
+    - proposal_to_po_gap
+    - rate_card
+  accepted_dimensions:
+    - brand
+    - country
+    - region
+    - subbrand
+    - product
+    - media
+    - submedia
+    - digital_lever
+    - status
+    - workflow_process
+    - flight_status
+    - flight_progress
+    - month
+  optional_filters:
+    - brand
+    - country
+    - media
+    - subbrand
+    - product
+    - submedia
+    - status
+    - workflow_process
+    - flight_status
+    - flight_progress
+  limit: 500
+output_contract:
+  langflow_safe:
+    never_return_null: true
+    missing_string: ""
+    missing_object: {}
+    missing_array: []
+filter_contract:
+  allowed_dimensions:
+    - brand
+    - country
+    - media
+    - subbrand
+    - product
+    - submedia
+    - status
+    - workflow_process
+    - flight_status
+    - flight_progress
+  resolver_required_for_user_values: true
+  preserve_source_value: true

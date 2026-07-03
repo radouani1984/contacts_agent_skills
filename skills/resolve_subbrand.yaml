@@ -1,0 +1,85 @@
+version: "1.0"
+skill_id: resolve_subbrand
+skill_type: dimension_resolver
+name: Resolve Subbrand
+description: >
+  Resolves a free-text subbrand query into the closest canonical subbrand values using exact,
+  prefix, contains and fuzzy matching with confidence scores.
+endpoint:
+  id: resolve_subbrand
+  method: GET
+use_when:
+  - The user mentions a subbrand with possible spelling variation.
+  - The planner needs canonical subbrand values before executing an analytical query.
+  - A top-k disambiguation list is needed.
+avoid_when:
+  - The user only wants to browse all subbrands.
+parameters:
+  required:
+    - q
+  optional:
+    - limit
+  defaults:
+    limit: 10
+response_contract:
+  kind: resolution_candidates
+  row_fields:
+    - value
+    - match_type
+    - row_count
+    - edit_distance
+    - similarity_score
+    - length_delta
+    - score
+planner_hints:
+  intent: resolve_subbrand_value
+  retrieval_keywords:
+    - resolve subbrand
+    - match subbrand
+    - normalize subbrand
+    - find subbrand
+    - subbrand exacte
+guardrails:
+  - Use this before analytical skills when subbrand input is free text.
+  - Accept exact match directly when score is 1.0; otherwise keep top candidates for validation.
+planner_contract:
+  task_type: resolve
+  intent: resolve_value
+  report_type: ""
+  metric: ""
+  metrics: []
+  dimension: subbrand
+  required_inputs:
+    - q
+  limit: 10
+  compiler_hints:
+    never_return_null: true
+    empty_string_for_missing_scalar: true
+    empty_dict_for_missing_object: true
+    empty_list_for_missing_array: true
+output_contract:
+  langflow_safe:
+    never_return_null: true
+    missing_string: ""
+    missing_object: {}
+    missing_array: []
+  planner_output_fields:
+    - version
+    - component
+    - status
+    - selected_skill
+    - task_type
+    - report_type
+    - metric
+    - metrics
+    - filters
+    - group_by
+    - limit
+    - is_follow_up
+    - keep_missing_context
+    - compare
+    - pivot
+    - confidence
+    - clarification
+    - warnings
+    - errors
