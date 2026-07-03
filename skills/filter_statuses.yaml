@@ -1,4 +1,4 @@
-version: "1.0"
+version: "1.1"
 skill_id: filter_statuses
 skill_type: dimension_listing
 name: Filter Statuses

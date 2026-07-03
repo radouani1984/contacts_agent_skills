@@ -1,4 +1,4 @@
-version: "1.0"
+version: "1.1"
 skill_id: budget_brand_financial_detail
 skill_type: analytical_query
 name: Budget Brand Financial Detail
