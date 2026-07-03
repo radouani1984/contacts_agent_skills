@@ -1,0 +1,267 @@
+# metrics/bigquery_budget_metrics_2025.yaml
+
+version: 1
+type: metrics_view
+
+display_name: Budget / Spend Metrics 2025
+model: bigquery_budget_model_2025
+timeseries: month_date
+smallest_time_grain: month
+
+dimensions:
+  - name: year
+    display_name: Year
+    column: year
+
+  - name: month_number
+    display_name: Month Number
+    column: month_number
+
+  - name: month
+    display_name: Month
+    column: month_label
+
+  - name: month_date
+    display_name: Month Date
+    column: month_date
+
+  - name: country
+    display_name: Country
+    column: country
+
+  - name: region
+    display_name: Region
+    column: region
+
+  - name: brand
+    display_name: Brand
+    column: brand
+
+  - name: subbrand
+    display_name: SubBrand
+    column: subbrand
+
+  - name: product
+    display_name: Product
+    column: product
+
+  - name: media
+    display_name: Media
+    column: media
+
+  - name: submedia
+    display_name: Submedia
+    column: submedia
+
+  - name: digital_lever
+    display_name: Digital Lever
+    column: digital_lever
+
+  - name: status
+    display_name: Status
+    column: status
+
+  - name: workflow_process
+    display_name: Workflow Process
+    column: workflow_process
+
+  - name: flight_status
+    display_name: Flight Status
+    column: flight_status
+
+  - name: flight_progress
+    display_name: Flight Progress
+    column: flight_progress
+
+  - name: retail_media
+    display_name: Retail Media
+    column: retail_media
+
+  - name: on_site_off_site
+    display_name: On-site / Off-site
+    column: on_site_off_site
+
+  - name: is_last_validated
+    display_name: Is Last Validated
+    column: is_last_validated
+
+measures:
+  - name: source_row_count
+    display_name: Source Row Count
+    expression: SUM(source_row_count)
+    description: Number of source rows aggregated into the budget view.
+    format_preset: humanize
+
+  - name: total_proposal_amount
+    display_name: Total Proposal Amount
+    expression: SUM(proposal_amount)
+    description: Total proposed budget amount.
+    format_preset: currency_eur
+
+  - name: total_purchase_order_amount
+    display_name: Total Purchase Order Amount
+    expression: SUM(purchase_order_amount)
+    description: Total purchase order amount.
+    format_preset: currency_eur
+
+  - name: proposal_to_po_gap
+    display_name: Proposal to PO Gap
+    expression: SUM(purchase_order_amount) - SUM(proposal_amount)
+    description: Difference between purchase order amount and proposal amount.
+    format_preset: currency_eur
+
+  - name: total_media_net_eur
+    display_name: Total Media Net EUR
+    expression: SUM(media_net_eur)
+    description: Total net media spend in EUR.
+    format_preset: currency_eur
+
+  - name: total_committed_gr_eur
+    display_name: Total Committed GR EUR
+    expression: SUM(committed_gr_amount_eur)
+    description: Total committed gross amount in EUR.
+    format_preset: currency_eur
+
+  - name: total_committed_media_eur
+    display_name: Total Committed Media EUR
+    expression: SUM(committed_media_amount_eur)
+    description: Total committed media amount in EUR.
+    format_preset: currency_eur
+
+  - name: total_committed_eur
+    display_name: Total Committed EUR
+    expression: SUM(committed_total_eur)
+    description: Total committed amount in EUR, including GR and media committed amounts.
+    format_preset: currency_eur
+
+  - name: committed_vs_media_net_gap_eur
+    display_name: Committed vs Media Net Gap EUR
+    expression: SUM(committed_total_eur) - SUM(media_net_eur)
+    description: Difference between total committed amount and media net spend in EUR.
+    format_preset: currency_eur
+
+  - name: total_rate_card_eur
+    display_name: Total Rate Card EUR
+    expression: SUM(rate_card_eur)
+    description: Total rate card value in EUR.
+    format_preset: currency_eur
+
+  - name: media_net_vs_rate_card_ratio
+    display_name: Media Net vs Rate Card Ratio
+    expression: SUM(media_net_eur) / NULLIF(SUM(rate_card_eur), 0)
+    description: Ratio of media net spend over rate card value.
+    format_preset: percentage
+
+  - name: total_media_production_cost_eur
+    display_name: Total Media Production Cost EUR
+    expression: SUM(media_production_cost_eur)
+    description: Total media production cost in EUR.
+    format_preset: currency_eur
+
+  - name: total_ad_serving_cost_eur
+    display_name: Total Ad Serving Cost EUR
+    expression: SUM(ad_serving_cost_eur)
+    description: Total ad serving cost in EUR.
+    format_preset: currency_eur
+
+  - name: total_specific_technical_cost_eur
+    display_name: Total Specific Technical Cost EUR
+    expression: SUM(specific_technical_cost_eur)
+    description: Total specific technical cost in EUR.
+    format_preset: currency_eur
+
+  - name: total_handling_cost_eur
+    display_name: Total Handling Cost EUR
+    expression: SUM(handling_cost_eur)
+    description: Total handling cost in EUR.
+    format_preset: currency_eur
+
+  - name: total_sampling_cost_eur
+    display_name: Total Sampling Cost EUR
+    expression: SUM(sampling_cost_eur)
+    description: Total sampling cost in EUR.
+    format_preset: currency_eur
+
+  - name: total_ad_verification_cost_eur
+    display_name: Total Ad Verification Cost EUR
+    expression: SUM(ad_verification_cost_eur)
+    description: Total ad verification cost in EUR.
+    format_preset: currency_eur
+
+  - name: total_trafficking_cost_eur
+    display_name: Total Trafficking Cost EUR
+    expression: SUM(trafficking_cost_eur)
+    description: Total trafficking cost in EUR.
+    format_preset: currency_eur
+
+  - name: total_dsp_fees_eur
+    display_name: Total DSP Fees EUR
+    expression: SUM(dsp_fees_eur)
+    description: Total DSP fees in EUR.
+    format_preset: currency_eur
+
+  - name: total_data_cost_eur
+    display_name: Total Data Cost EUR
+    expression: SUM(data_cost_eur)
+    description: Total data cost in EUR.
+    format_preset: currency_eur
+
+  - name: total_media_taxes_eur
+    display_name: Total Media Taxes EUR
+    expression: SUM(media_taxes_eur)
+    description: Total media taxes in EUR.
+    format_preset: currency_eur
+
+  - name: total_media_agency_fees_eur
+    display_name: Total Media Agency Fees EUR
+    expression: SUM(media_agency_fees_eur)
+    description: Total media agency fees in EUR.
+    format_preset: currency_eur
+
+  - name: total_rebates_avb_eur
+    display_name: Total Rebates AVB EUR
+    expression: SUM(rebates_avb_eur)
+    description: Total rebates AVB in EUR.
+    format_preset: currency_eur
+
+  - name: total_free_amount_eur
+    display_name: Total Free Amount EUR
+    expression: SUM(free_amount_eur)
+    description: Total free amount in EUR.
+    format_preset: currency_eur
+
+  - name: total_technical_costs_eur
+    display_name: Total Technical Costs EUR
+    expression: SUM(technical_costs_eur)
+    description: Combined technical and platform-related costs in EUR.
+    format_preset: currency_eur
+
+  - name: total_non_media_costs_eur
+    display_name: Total Non-Media Costs EUR
+    expression: SUM(non_media_costs_eur)
+    description: Combined non-media costs, taxes, fees and technical costs in EUR.
+    format_preset: currency_eur
+
+  - name: total_gross_investment_eur
+    display_name: Total Gross Investment EUR
+    expression: SUM(gross_investment_eur)
+    description: Media net spend plus non-media costs, taxes and fees in EUR.
+    format_preset: currency_eur
+
+  - name: agency_fee_rate_eur
+    display_name: Agency Fee Rate EUR
+    expression: SUM(media_agency_fees_eur) / NULLIF(SUM(media_net_eur), 0)
+    description: Agency fees as a ratio of media net spend.
+    format_preset: percentage
+
+  - name: tax_rate_eur
+    display_name: Media Tax Rate EUR
+    expression: SUM(media_taxes_eur) / NULLIF(SUM(media_net_eur), 0)
+    description: Media taxes as a ratio of media net spend.
+    format_preset: percentage
+
+  - name: technical_cost_rate_eur
+    display_name: Technical Cost Rate EUR
+    expression: SUM(technical_costs_eur) / NULLIF(SUM(media_net_eur), 0)
+    description: Technical costs as a ratio of media net spend.
+    format_preset: percentage

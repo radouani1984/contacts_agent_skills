@@ -1,0 +1,4 @@
+SELECT flight_progress, count(*)
+FROM `ooo-contacts-gbl-ww-dv.contacts.tbl_budget_2025_anon` 
+group by flight_progress
+order by flight_progress
